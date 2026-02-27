@@ -32,7 +32,7 @@
 
             <div class="bg-white overflow-hidden shadow-2xl shadow-pink-100 sm:rounded-[3rem] border border-white">
                 <div class="p-10">
-                    <h3 class="text-xl font-bold text-gray-800 mb-8 border-b border-pink-50 pb-4">Daftar Pesananlara</h3>
+                    <h3 class="text-xl font-bold text-gray-800 mb-8 border-b border-pink-50 pb-4">Daftar Pesanan</h3>
 
                     @if($orders->count() > 0)
                         <div class="space-y-6">

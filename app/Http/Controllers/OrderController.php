@@ -12,22 +12,23 @@ class OrderController extends Controller
     /**
      * Menampilkan daftar riwayat pesanan untuk Customer
      */
-    public function index()
+   public function index()
 {
-    // Mengambil data pesanan milik user yang sedang login
+    // Hanya mengambil data belanja milik user tersebut
     $orders = Order::where('user_id', Auth::id())
-                    ->orderBy('created_at', 'desc')
-                    ->get();
+        ->orderBy('created_at', 'desc')
+        ->get();
 
-    // PERBAIKAN: Harus ke 'dashboard' karena itu file yang kamu edit
+    // Mengarah ke resources/views/dashboard.blade.php
+    // Tanpa variabel grafik ($months/$totals) agar grafik tidak muncul
     return view('dashboard', compact('orders'));
 }
 
-public function customerIndex()
-{
-    $orders = Order::where('user_id', Auth::id())->latest()->get();
-    return view('customer.orders.index', compact('orders'));
-}
+    public function customerIndex()
+    {
+        $orders = Order::where('user_id', Auth::id())->latest()->get();
+        return view('customer.orders.index', compact('orders'));
+    }
 
     /**
      * Menampilkan daftar pesanan masuk untuk Admin
@@ -55,44 +56,110 @@ public function customerIndex()
      * Callback dari Midtrans untuk update status otomatis
      */
     public function midtransCallback(Request $request)
-{
-    $serverKey = config('midtrans.server_key');
-    // Verifikasi tanda tangan keamanan dari Midtrans
-    $hashed = hash("sha512", $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
+    {
+        $serverKey = config('midtrans.server_key');
+        $hashed = hash("sha512", $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
 
-    if ($hashed == $request->signature_key) {
-        // Cek jika transaksi berhasil (settlement atau capture)
-        if ($request->transaction_status == 'capture' || $request->transaction_status == 'settlement') {
+        if ($hashed == $request->signature_key) {
+            // Cek jika transaksi berhasil
+            if ($request->transaction_status == 'capture' || $request->transaction_status == 'settlement') {
 
-            // Mengambil ID pesanan dari format GLOW-{ID}-{TIME}
-            $orderIdParts = explode('-', $request->order_id);
-            $orderId = $orderIdParts[1];
+                $orderIdParts = explode('-', $request->order_id);
+                $orderId = $orderIdParts[1];
 
-            $order = \App\Models\Order::find($orderId);
+                $order = \App\Models\Order::find($orderId);
 
-            if ($order) {
-                // OTOMATIS UBAH STATUS JADI SUCCESS
-                $order->update(['status' => 'success']);
+                if ($order && $order->status !== 'success') {
+                    // HANYA update status ke success
+                    // Stok tidak dikurangi di sini karena sudah dikurangi saat checkout
+                    $order->update(['status' => 'success']);
+
+                    return response()->json(['message' => 'Status pembayaran berhasil diperbarui']);
+                }
             }
         }
+
+        return response()->json(['message' => 'Callback diterima'], 200);
     }
 
-    return response()->json(['status' => 'ok']);
-}
+    public function updateStatus(Request $request, $id)
+    {
+        // Eager loading items dan product
+        $order = Order::with('items.product')->findOrFail($id);
+        $oldStatus = $order->status;
 
-public function updateStatus(Request $request, $id)
+        $request->validate([
+            'status' => 'required|in:pending,success,dikirim,selesai,dibatalkan'
+        ]);
+
+        // Update status baru
+        $order->update(['status' => $request->status]);
+
+        // LOGIKA PENGEMBALIAN STOK ✨
+        // Jika status diubah menjadi 'dibatalkan' dan status sebelumnya bukan 'dibatalkan'
+        if ($request->status == 'dibatalkan' && $oldStatus != 'dibatalkan') {
+            foreach ($order->items as $item) {
+                if ($item->product) {
+                    // Kembalikan stok yang sebelumnya terpotong
+                    $item->product->increment('stock', $item->quantity);
+                }
+            }
+        }
+        // Jika status dikembalikan dari 'dibatalkan' ke status aktif lagi (misal dikirim/selesai)
+        elseif ($oldStatus == 'dibatalkan' && in_array($request->status, ['success', 'dikirim', 'selesai'])) {
+            foreach ($order->items as $item) {
+                if ($item->product) {
+                    // Potong kembali stoknya
+                    $item->product->decrement('stock', $item->quantity);
+                }
+            }
+        }
+
+        return redirect()->back()->with('success', 'Status diperbarui dan stok disesuaikan! ✨');
+    }
+
+    //laporan keuangan
+
+    public function laporan()
+    {
+        // Mengambil hanya pesanan yang sudah dibayar (success/selesai)
+        $orders = Order::whereIn('status', ['success', 'selesai'])
+            ->with('user')
+            ->latest()
+            ->get();
+
+        // Menghitung total pendapatan
+        $totalPendapatan = $orders->sum('total_price');
+
+        return view('admin.laporan.index', compact('orders', 'totalPendapatan'));
+    }
+
+   // app/Http/Controllers/OrderController.php
+
+// UNTUK ADMIN (Grafik ADA)
+public function adminDashboard()
 {
-    $order = Order::findOrFail($id);
+    // Ambil data penjualan
+    $salesData = \App\Models\Order::whereIn('status', ['success', 'selesai'])
+        ->whereYear('created_at', date('Y'))
+        ->selectRaw('MONTH(created_at) as month, SUM(total_price) as total')
+        ->groupBy('month')
+        ->pluck('total', 'month')
+        ->toArray();
 
-    // Validasi input status
-    $request->validate([
-        'status' => 'required|in:pending,success,dikirim,selesai,dibatalkan'
-    ]);
+    $months = []; $totals = [];
+    for ($m = 1; $m <= 12; $m++) {
+        // Menggunakan nama bulan singkat (Jan, Feb, dst)
+        $months[] = \Carbon\Carbon::create()->month($m)->format('M');
+        // Memastikan data adalah angka (integer)
+        $totals[] = (int)($salesData[$m] ?? 0);
+    }
 
-    $order->update([
-        'status' => $request->status
-    ]);
+    $orders = \App\Models\Order::with('user')->latest()->take(5)->get();
 
-    return redirect()->back()->with('success', 'Status pesanan berhasil diperbarui! ✨');
+    return view('admin.dashboard', compact('months', 'totals', 'orders'));
 }
+
+// UNTUK CUSTOMER (Grafik TIDAK ADA)
+
 }

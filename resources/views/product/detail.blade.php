@@ -4,6 +4,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <title>{{ $product->name }} - GlowUp</title>
     <link href="https://fonts.bunny.net/css?family=playfair+display:700|figtree:400,500,600&display=swap"
         rel="stylesheet" />
@@ -19,10 +21,18 @@
 
     <nav class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-pink-100">
         <div class="max-w-7xl mx-auto px-4 h-20 flex justify-between items-center">
-            <a href="{{ route('dashboard') }}"
+            <a href="{{ url('/') }}"
                 class="text-2xl font-playfair font-bold text-pink-600 tracking-tighter">GLOWUP</a>
 
-            <a href="{{ Auth::user()->role == 'admin' ? route('admin.products.index') : route('customer.katalog') }}"
+            {{-- Perbaikan: Cek apakah user login sebelum cek role --}}
+            @php
+                $backRoute = route('customer.katalog'); // Default untuk tamu/customer
+                if (auth()->check() && auth()->user()->role == 'admin') {
+                    $backRoute = route('admin.products.index');
+                }
+            @endphp
+
+            <a href="{{ $backRoute }}"
                 class="text-sm font-bold text-gray-500 hover:text-pink-600 transition flex items-center">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -65,33 +75,40 @@
                 </div>
 
                 <div class="flex items-center space-x-4 mt-10">
+                    {{-- Tombol Beli: Jika belum login, arahkan ke login --}}
+                    @auth
+                        <form action="{{ route('cart.store', $product->id) }}" method="POST" class="flex-none">
+                            @csrf
+                            <input type="hidden" name="redirect_to" value="stay">
 
-                    <form action="{{ route('cart.store', $product->id) }}" method="POST" class="flex-none">
-                        @csrf
-                        <input type="hidden" name="redirect_to" value="stay">
+                            <button type="submit"
+                                class="w-16 py-4 border-2 border-gray-900 rounded-2xl hover:bg-gray-900 hover:text-white transition flex items-center justify-center group shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 group-hover:scale-110 transition"
+                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                            </button>
+                        </form>
 
-                        <button type="submit"
-                            class="w-16 py-4 border-2 border-gray-900 rounded-2xl hover:bg-gray-900 hover:text-white transition flex items-center justify-center group shadow-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 group-hover:scale-110 transition"
-                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
-                        </button>
-                    </form>
-                    <form action="{{ route('cart.store', $product->id) }}" method="POST" class="flex-grow">
-                        @csrf
-                        <input type="hidden" name="redirect_to" value="checkout">
-                        <button type="submit" class="w-full py-4 bg-pink-600 text-white font-bold rounded-2xl ...">
-                            <span>Beli Sekarang ✨</span>
-                        </button>
-                    </form>
-
+                        <form action="{{ route('cart.store', $product->id) }}" method="POST" class="flex-grow">
+                            @csrf
+                            <input type="hidden" name="redirect_to" value="checkout">
+                            <button type="submit"
+                                class="w-full py-4 bg-pink-600 text-white font-bold rounded-2xl shadow-lg shadow-pink-100 hover:bg-pink-700 hover:shadow-pink-200 transition-all duration-300">
+                                <span>Beli Sekarang ✨</span>
+                            </button>
+                        </form>
+                    @else
+                        <a href="{{ route('login') }}" class="w-full py-4 bg-gray-800 text-white text-center font-bold rounded-2xl hover:bg-gray-900 transition-all">
+                            Login untuk Membeli 🛒
+                        </a>
+                    @endauth
                 </div>
-
             </div>
         </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     @if (session('success'))
@@ -103,12 +120,11 @@
                 showConfirmButton: false,
                 timer: 2000,
                 background: '#fff',
-                color: '#db2777', // Warna pink GlowUp
+                color: '#db2777',
                 iconColor: '#db2777'
             });
         </script>
     @endif
 
 </body>
-
 </html>

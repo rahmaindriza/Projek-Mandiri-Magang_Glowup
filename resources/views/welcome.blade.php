@@ -64,9 +64,9 @@
                         class="text-gray-800 hover:text-pink-600 text-sm font-semibold transition uppercase tracking-widest">Home</a>
                     <a href="#katalog"
                         class="text-gray-800 hover:text-pink-600 text-sm font-semibold transition uppercase tracking-widest">Shop</a>
-                    <a href="#"
+                    {{-- <a href="#"
                         class="text-gray-800 hover:text-pink-600 text-sm font-semibold transition uppercase tracking-widest">Best
-                        Seller</a>
+                        Seller</a> --}}
                 </div>
                 <div class="flex items-center space-x-6">
                     @if (Route::has('login'))

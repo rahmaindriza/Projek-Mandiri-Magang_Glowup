@@ -1,149 +1,105 @@
 <x-app-layout>
-
     <x-slot name="header">
-
         <div class="flex justify-between items-center">
-
-            <h2 class="font-playfair font-semibold text-2xl text-pink-600 leading-tight">
-
-                {{ __('Admin Dashboard - Kelola Skincare') }}
-
-            </h2>
-
-            <span class="bg-pink-100 text-pink-700 px-4 py-1 rounded-full text-sm font-bold shadow-sm">
-
-                Mode Administrator
-
-            </span>
-
+            <h2 class="font-playfair font-semibold text-2xl text-pink-600 leading-tight">Admin Dashboard</h2>
+            <a href="{{ route('admin.laporan.index') }}" class="bg-white text-pink-600 border border-pink-200 px-4 py-1 rounded-full text-xs font-black uppercase shadow-sm">💰 Laporan Keuangan</a>
         </div>
-
     </x-slot>
 
-
-
     <div class="py-12 bg-pink-50 min-h-screen">
-
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
 
-
-
-            @if(session('success'))
-
-                <div class="mb-6 p-4 bg-green-500 text-white rounded-2xl shadow-lg border-none flex items-center">
-
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-
-                    </svg>
-
-                    {{ session('success') }}
-
-                </div>
-
-            @endif
-
-
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-
+            {{-- Statistik Grid --}}
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white p-6 rounded-3xl shadow-sm border border-pink-100">
-
-                    <p class="text-gray-500 text-sm">Total Produk</p>
-
-                    <h3 class="text-2xl font-bold text-gray-800">{{ \App\Models\Product::count() }}</h3>
-
+                    <p class="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Total Produk</p>
+                    <h3 class="text-2xl font-black text-gray-800">{{ \App\Models\Product::count() }}</h3>
                 </div>
-
                 <div class="bg-white p-6 rounded-3xl shadow-sm border border-pink-100">
-
-                    <p class="text-gray-500 text-sm">Total Kategori</p>
-
-                    <h3 class="text-2xl font-bold text-gray-800">{{ \App\Models\Category::count() }}</h3>
-
+                    <p class="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Total Kategori</p>
+                    <h3 class="text-2xl font-black text-gray-800">{{ \App\Models\Category::count() }}</h3>
                 </div>
-
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-pink-100">
-
-                    <p class="text-gray-500 text-sm">Admin Aktif</p>
-
-                    <h3 class="text-2xl font-bold text-pink-600">{{ Auth::user()->name }}</h3>
-
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-pink-100 border-t-4 border-t-pink-400">
+                    <p class="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Stok Gudang</p>
+                    <h3 class="text-2xl font-black text-pink-600">{{ \App\Models\Product::sum('stock') }} <span class="text-xs">pcs</span></h3>
                 </div>
-
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-pink-100 border-l-4 border-l-pink-600">
+                    <p class="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Total Omzet</p>
+                    <h3 class="text-2xl font-black text-pink-600">Rp {{ number_format(\App\Models\Order::whereIn('status', ['success', 'selesai'])->sum('total_price'), 0, ',', '.') }}</h3>
+                </div>
             </div>
+{{--
+            AREA GRAFIK
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-pink-100 mb-8">
+                <h3 class="text-xl font-bold text-gray-800 mb-6">Tren Penjualan Skincare 💖</h3>
+                <div style="position: relative; height:300px; width:100%">
+                    <canvas id="salesChart"></canvas>
+                </div>
+            </div> --}}
 
-
-
-            <div class="mt-8 bg-white overflow-hidden shadow-xl sm:rounded-3xl border border-white">
-                <div class="p-8">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-xl font-bold text-gray-800 flex items-center">
-                            <span class="bg-pink-600 w-2 h-8 rounded-full mr-3"></span>
-                            Pesanan Terbaru ✨
-                        </h3>
-                        <a href="{{ route('admin.orders.index') }}" class="text-[10px] font-black text-pink-600 uppercase tracking-widest hover:underline">
-                            Lihat Semua →
-                        </a>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead>
-                                <tr class="text-pink-600 text-[10px] font-black uppercase tracking-[0.2em] border-b border-pink-50">
-                                    <th class="px-4 py-3">ID</th>
-                                    <th class="px-4 py-3">Pelanggan</th>
-                                    <th class="px-4 py-3">Total</th>
-                                    <th class="px-4 py-3 text-center">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-50">
-                                @php
-                                    // Mengambil 5 pesanan terbaru secara langsung dari Model
-                                    $recentOrders = \App\Models\Order::with('user')->latest()->take(5)->get();
-                                @endphp
-
-                                @forelse($recentOrders as $order)
+            {{-- Tabel Pesanan Terbaru --}}
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-3xl border border-pink-50 p-8">
+                <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center"><span class="bg-pink-600 w-2 h-8 rounded-full mr-3"></span> Pesanan Terbaru ✨</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-pink-600 text-[10px] font-black uppercase border-b border-pink-50">
+                                <th class="px-4 py-3">ID</th>
+                                <th class="px-4 py-3">Pelanggan</th>
+                                <th class="px-4 py-3">Total</th>
+                                <th class="px-4 py-3 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            @foreach($orders as $order)
                                 <tr class="hover:bg-pink-50/30 transition-colors">
                                     <td class="px-4 py-4 text-xs font-bold text-gray-400">#{{ $order->id }}</td>
-                                    <td class="px-4 py-4">
-                                        <p class="text-sm font-bold text-gray-800">{{ $order->user->name }}</p>
-                                        <p class="text-[10px] text-gray-400 font-medium lowercase italic">{{ $order->user->email }}</p>
-                                    </td>
-                                    <td class="px-4 py-4 text-sm font-black text-pink-600 italic">
-                                        Rp {{ number_format($order->total_price, 0, ',', '.') }}
-                                    </td>
-                                    <td class="px-4 py-4 text-center">
-                                        <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest
-                                            {{ $order->status == 'success' ? 'bg-green-100 text-green-600' : '' }}
-                                            {{ $order->status == 'pending' ? 'bg-yellow-100 text-yellow-600' : '' }}
-                                            {{ $order->status == 'dikirim' ? 'bg-blue-100 text-blue-600' : '' }}
-                                            {{ $order->status == 'selesai' ? 'bg-purple-100 text-purple-600' : '' }}
-                                            {{ $order->status == 'dibatalkan' ? 'bg-red-100 text-red-600' : '' }}">
-                                            {{ $order->status }}
-                                        </span>
-                                    </td>
+                                    <td class="px-4 py-4"><p class="text-sm font-bold text-gray-800">{{ $order->user->name }}</p></td>
+                                    <td class="px-4 py-4 text-sm font-black text-pink-600 italic">Rp {{ number_format($order->total_price, 0, ',', '.') }}</td>
+                                    <td class="px-4 py-4 text-center"><span class="px-3 py-1 rounded-full text-[9px] font-black uppercase {{ $order->status == 'success' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600' }}">{{ $order->status }}</span></td>
                                 </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="4" class="py-10 text-center">
-                                        <p class="text-gray-400 italic text-sm">Belum ada transaksi masuk.</p>
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             </div>
-
-            <div class="mt-8 text-center pb-12">
-                <a href="{{ route('admin.products.index') }}" class="text-pink-600 font-bold hover:underline text-sm uppercase tracking-widest">
-                    Lihat Katalog Produk →
-                </a>
-            </div>
-
         </div>
     </div>
 </x-app-layout>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const canvas = document.getElementById('salesChart');
+        if (canvas) {
+            new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: {!! json_encode($months) !!},
+                    datasets: [{
+                        label: 'Omzet (Rp)',
+                        data: {!! json_encode($totals) !!},
+                        borderColor: '#db2777',
+                        backgroundColor: 'rgba(219, 39, 119, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#db2777',
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: function(value) { return 'Rp ' + value.toLocaleString(); } }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+@endpush

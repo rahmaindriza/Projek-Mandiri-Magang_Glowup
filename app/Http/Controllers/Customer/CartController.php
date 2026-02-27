@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Midtrans\Config;
 use Midtrans\Snap;
+use App\Models\OrderItem;
 
 class CartController extends Controller
 {
@@ -82,7 +83,7 @@ class CartController extends Controller
 
     return view('customer.checkout', compact('cartItems', 'total'));
 }
-  public function processCheckout(Request $request)
+ public function processCheckout(Request $request)
 {
     $serverKey = config('midtrans.server_key');
     $isProduction = config('midtrans.is_production');
@@ -93,31 +94,54 @@ class CartController extends Controller
         : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
 
     try {
-        // Ambil user menggunakan Auth facade
         $user = Auth::user();
 
         if (!$user) {
             return response()->json(['error' => 'Silakan login terlebih dahulu.'], 401);
         }
 
-        // Ambil data keranjang berdasarkan item yang dipilih
+        // Ambil data keranjang beserta produknya
         $cartItems = Cart::with('product')->whereIn('id', $request->item_ids)->get();
 
         if ($cartItems->isEmpty()) {
             return response()->json(['error' => 'Keranjang kosong.'], 400);
         }
 
+        // --- VALIDASI STOK (Mencegah stok minus) ---
+        foreach ($cartItems as $item) {
+            if ($item->product->stock < $item->quantity) {
+                return response()->json([
+                    'error' => "Maaf, stok {$item->product->name} tidak mencukupi! (Sisa: {$item->product->stock})"
+                ], 400);
+            }
+        }
+
         $total = (int) $cartItems->sum(fn($item) => $item->product->price * $item->quantity);
 
-        // Simpan Data Pesanan ke tabel orders
+        // 1. Simpan Data Pesanan Utama
         $order = Order::create([
             'user_id' => $user->id,
             'total_price' => $total,
             'status' => 'pending',
-            'phone' => $request->phone, // Ambil dari input form
+            'phone' => $request->phone,
             'address' => $request->address,
         ]);
 
+        // 2. Simpan Detail Item DAN LANGSUNG KURANGI STOK ✨
+        foreach ($cartItems as $item) {
+            // Simpan ke tabel order_items
+            \App\Models\OrderItem::create([
+                'order_id'   => $order->id,
+                'product_id' => $item->product_id,
+                'quantity'   => $item->quantity,
+                'price'      => $item->product->price,
+            ]);
+
+            // KURANGI STOK PRODUK DETIK INI JUGA
+            $item->product->decrement('stock', $item->quantity);
+        }
+
+        // 3. Persiapkan Parameter Midtrans
         $params = [
             'transaction_details' => [
                 'order_id' => 'GLOW-' . $order->id . '-' . time(),
@@ -130,7 +154,7 @@ class CartController extends Controller
             ],
         ];
 
-        // Eksekusi cURL (Gunakan kode cURL yang sudah kita bahas sebelumnya agar tidak error SSL)
+        // 4. Eksekusi cURL ke Midtrans
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -141,7 +165,7 @@ class CartController extends Controller
             'Accept: application/json',
             'Authorization: Basic ' . base64_encode($serverKey . ':')
         ]);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Bypass SSL Laragon
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
         $result = curl_exec($ch);
         curl_close($ch);
@@ -163,5 +187,5 @@ class CartController extends Controller
     } catch (\Exception $e) {
         return response()->json(['error' => 'Server Error: ' . $e->getMessage()], 500);
     }
-}
+}   
 }

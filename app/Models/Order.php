@@ -19,8 +19,16 @@ class Order extends Model
     ];
 
 
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
+   // app/Models/Order.php
+
+public function user()
+{
+    return $this->belongsTo(User::class);
+}
+
+// Tambahkan fungsi terpisah untuk items
+public function items()
+{
+    return $this->hasMany(OrderItem::class);
+}
 }

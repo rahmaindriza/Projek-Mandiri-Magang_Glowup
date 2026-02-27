@@ -30,4 +30,24 @@ class ProductController extends Controller
 
     return redirect()->back()->with('success', 'Produk skincare berhasil disimpan!');
 }
+
+public function katalog(Request $request)
+{
+    $categories = \App\Models\Category::all(); // Ambil semua kategori untuk tombol filter
+    $query = Product::with('category')->latest();
+
+    // Filter berdasarkan Pencarian
+    if ($request->filled('search')) {
+        $query->where('name', 'like', '%' . $request->search . '%');
+    }
+
+    // Filter berdasarkan Kategori
+    if ($request->filled('category')) {
+        $query->where('category_id', $request->category);
+    }
+
+    $products = $query->get();
+
+    return view('customer.katalog', compact('products', 'categories'));
+}
 }
