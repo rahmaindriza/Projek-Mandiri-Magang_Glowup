@@ -29,24 +29,12 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead>
                                 <tr class="bg-pink-50">
-                                    <th
-                                        class="px-6 py-4 text-left text-xs font-bold text-pink-600 uppercase tracking-widest">
-                                        Gambar</th>
-                                    <th
-                                        class="px-6 py-4 text-left text-xs font-bold text-pink-600 uppercase tracking-widest">
-                                        Nama Produk</th>
-                                    <th
-                                        class="px-6 py-4 text-left text-xs font-bold text-pink-600 uppercase tracking-widest">
-                                        Kategori</th>
-                                    <th
-                                        class="px-6 py-4 text-left text-xs font-bold text-pink-600 uppercase tracking-widest">
-                                        Harga</th>
-                                    <th
-                                        class="px-6 py-4 text-left text-xs font-bold text-pink-600 uppercase tracking-widest">
-                                        Stok</th>
-                                    <th
-                                        class="px-6 py-4 text-center text-xs font-bold text-pink-600 uppercase tracking-widest">
-                                        Aksi</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold text-pink-600 uppercase tracking-widest">Gambar</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold text-pink-600 uppercase tracking-widest">Nama Produk</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold text-pink-600 uppercase tracking-widest">Kategori</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold text-pink-600 uppercase tracking-widest">Harga</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold text-pink-600 uppercase tracking-widest">Stok</th>
+                                    <th class="px-6 py-4 text-center text-xs font-bold text-pink-600 uppercase tracking-widest">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-100">
@@ -56,11 +44,9 @@
                                             <img src="{{ asset('storage/' . $product->image) }}"
                                                 class="w-16 h-16 object-cover rounded-2xl shadow-sm border border-pink-100">
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap font-bold text-gray-800">
-                                            {{ $product->name }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap font-bold text-gray-800">{{ $product->name }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <span
-                                                class="px-3 py-1 bg-pink-100 text-pink-700 rounded-full text-[10px] font-black uppercase italic">
+                                            <span class="px-3 py-1 bg-pink-100 text-pink-700 rounded-full text-[10px] font-black uppercase italic">
                                                 {{ $product->category->name }}
                                             </span>
                                         </td>
@@ -70,25 +56,31 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-gray-600">
                                             {{ $product->stock }} <span class="text-xs text-gray-400">pcs</span>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-center">
-                                            <div class="flex justify-center items-center space-x-2">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex justify-center items-center space-x-3">
+                                                {{-- Tombol Tambah Stok --}}
+                                                <a href="{{ route('admin.products.addStock', $product->id) }}"
+                                                   class="p-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition shadow-sm"
+                                                   title="Tambah Stok">
+                                                    <span class="mr-1">➕</span> Tambah Stok
+                                                </a>
 
+                                                {{-- Tombol Edit --}}
                                                 <a href="{{ route('admin.products.edit', $product->id) }}"
-                                                    class="bg-amber-100 text-amber-600 p-2 rounded-xl hover:bg-amber-600 hover:text-white transition shadow-sm flex items-center">
+                                                   class="bg-amber-50 text-amber-600 px-4 py-2 rounded-xl hover:bg-amber-600 hover:text-white transition shadow-sm flex items-center font-bold text-xs uppercase">
                                                     <span class="mr-1">✏️</span> Edit
                                                 </a>
 
+                                                {{-- Tombol Hapus --}}
                                                 <form action="{{ route('admin.products.destroy', $product->id) }}"
-                                                    method="POST"
-                                                    onsubmit="return confirm('Yakin ingin menghapus produk ini? 🌸')">
+                                                      method="POST"
+                                                      onsubmit="return confirm('Yakin ingin menghapus produk ini? 🌸')">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit"
-                                                        class="text-red-600 font-bold text-[10px] uppercase">
+                                                    <button type="submit" class="text-red-600 font-black text-[10px] uppercase hover:underline">
                                                         Hapus 🗑️
                                                     </button>
                                                 </form>
-
                                             </div>
                                         </td>
                                     </tr>

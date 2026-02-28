@@ -8,6 +8,7 @@ use App\Http\Controllers\Customer\CartController;
 use Illuminate\Support\Facades\Route;
 use App\Models\Product;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\AdminProuctController;
 
 
 /*
@@ -99,6 +100,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
 // Cari baris ini di routes/web.php
 Route::get('/admin/dashboard', [OrderController::class, 'adminDashboard'])->name('admin.dashboard');
+
 // Kelola user oleh admin
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
 
@@ -111,4 +113,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy'); // Hapus User
 
 });
+//Update stok produk oleh admin
+Route::get('/admin/products/{id}/add-stock', [AdminProductController::class, 'addStock'])->name('admin.products.addStock');
+Route::post('/admin/products/{id}/update-stock', [AdminProductController::class, 'updateStock'])->name('admin.products.updateStock');
+
+//peringatan stok menipis produk oleh admin
+Route::get('/admin/dashboard', [\App\Http\Controllers\Admin\AdminProductController::class, 'adminDashboard'])->name('admin.dashboard');
+
 require __DIR__.'/auth.php';
