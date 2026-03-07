@@ -50,4 +50,10 @@ public function katalog(Request $request)
 
     return view('customer.katalog', compact('products', 'categories'));
 }
+public function show($id) {
+    $product = Product::with(['category', 'reviews.user'])->findOrFail($id);
+    return view('product.detail', compact('product')); // Pastikan filenya resources/views/product/detail.blade.php
+}
+
+
 }

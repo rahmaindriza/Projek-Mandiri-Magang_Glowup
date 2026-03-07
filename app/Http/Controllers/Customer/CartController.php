@@ -122,7 +122,7 @@ class CartController extends Controller
         $order = Order::create([
             'user_id' => $user->id,
             'total_price' => $total,
-            'status' => 'pending',
+           'status' => 'dikemas',
             'phone' => $request->phone,
             'address' => $request->address,
         ]);
@@ -187,5 +187,5 @@ class CartController extends Controller
     } catch (\Exception $e) {
         return response()->json(['error' => 'Server Error: ' . $e->getMessage()], 500);
     }
-}   
+}
 }

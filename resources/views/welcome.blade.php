@@ -51,6 +51,8 @@
     </style>
 </head>
 
+
+
 <body class="antialiased bg-white font-['Figtree']">
 
     <nav class="glass-nav shadow-sm fixed top-0 w-full z-50 border-b border-pink-100">
@@ -62,13 +64,31 @@
                 <div class="hidden space-x-10 sm:flex">
                     <a href="#"
                         class="text-gray-800 hover:text-pink-600 text-sm font-semibold transition uppercase tracking-widest">Home</a>
+
+                    <a href="#katalog"
+                        class="text-gray-800 hover:text-pink-600 text-sm font-semibold transition uppercase tracking-widest">Categories</a>
+
+                    <a href="#testimoni"
+                        class="text-gray-800 hover:text-pink-600 text-sm font-semibold transition uppercase tracking-widest">Reviews</a>
+
                     <a href="#katalog"
                         class="text-gray-800 hover:text-pink-600 text-sm font-semibold transition uppercase tracking-widest">Shop</a>
-                    {{-- <a href="#"
-                        class="text-gray-800 hover:text-pink-600 text-sm font-semibold transition uppercase tracking-widest">Best
-                        Seller</a> --}}
                 </div>
                 <div class="flex items-center space-x-6">
+                    <form action="{{ route('welcome') }}" method="GET"
+                        class="hidden md:flex items-center relative group">
+                        <input type="text" name="search" value="{{ request('search') }}"
+                            placeholder="Cari skincare favoritmu..."
+                            class="w-48 lg:w-64 pl-10 pr-4 py-2 text-xs bg-pink-50 border-none rounded-full focus:ring-2 focus:ring-pink-500 transition-all duration-300 placeholder:text-pink-300">
+                        <div class="absolute left-3.5 text-pink-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                    </form>
+
                     @if (Route::has('login'))
                         @auth
                             <a href="{{ url('/dashboard') }}"
@@ -116,14 +136,27 @@
             </div>
         </div>
     </header>
-
     <div id="katalog" class="bg-slate-50 py-24">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
                 <h3 class="text-4xl font-playfair font-bold text-gray-900 mb-4">Koleksi Skincare Kami</h3>
                 <div class="w-20 h-1.5 bg-pink-600 mx-auto rounded-full"></div>
-                <p class="mt-6 text-gray-500 font-medium text-lg">Produk pilihan untuk hasil yang maksimal dan sehat.
-                </p>
+                <p class="mt-6 text-gray-500 font-medium text-lg mb-10">Produk pilihan untuk hasil yang maksimal dan
+                    sehat.</p>
+
+                <div class="flex flex-wrap justify-center gap-3">
+                    <a href="{{ route('welcome') }}#katalog"
+                        class="px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 border border-pink-100 {{ !request('category') ? 'bg-pink-600 text-white shadow-lg' : 'bg-white text-gray-400 hover:text-pink-600 shadow-sm' }}">
+                        Semua Produk
+                    </a>
+
+                    @foreach ($categories as $category)
+                        <a href="{{ route('welcome', ['category' => $category->id]) }}#katalog"
+                            class="px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 border border-pink-100 {{ request('category') == $category->id ? 'bg-pink-600 text-white shadow-lg' : 'bg-white text-gray-400 hover:text-pink-600 shadow-sm' }}">
+                            {{ $category->name }}
+                        </a>
+                    @endforeach
+                </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
@@ -135,7 +168,8 @@
                             {{ $product->category->name }}
                         </span>
 
-                        <a href="{{ route('product.show', $product->id) }}" class="relative h-72 block overflow-hidden">
+                        <a href="{{ route('product.show', $product->id) }}"
+                            class="relative h-72 block overflow-hidden">
                             <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}"
                                 class="w-full h-full object-cover transition-transform duration-700">
                             <div
@@ -145,15 +179,11 @@
 
                         <div class="p-8 text-center">
                             <h4 class="text-xl font-bold text-gray-800 mb-2 truncate hover:text-pink-600 transition">
-                                <a href="{{ route('product.show', $product->id) }}">
-                                    {{ $product->name }}
-                                </a>
+                                <a href="{{ route('product.show', $product->id) }}">{{ $product->name }}</a>
                             </h4>
-
                             <p class="text-pink-600 font-black text-lg mb-6 tracking-tight">
                                 Rp {{ number_format($product->price, 0, ',', '.') }}
                             </p>
-
                             <a href="{{ route('register') }}"
                                 class="block w-full py-3.5 bg-gray-900 text-white text-xs font-bold uppercase tracking-[0.2em] rounded-2xl hover:bg-pink-600 transition-all duration-300 shadow-lg hover:scale-[1.02] text-center">
                                 Add To Cart
@@ -163,12 +193,56 @@
                 @empty
                     <div
                         class="col-span-full text-center py-20 bg-white rounded-[3rem] shadow-inner border-2 border-dashed border-pink-100">
-                        <p class="text-gray-400 italic font-medium">Belum ada produk yang ditampilkan.</p>
+                        <p class="text-gray-400 italic font-medium">Belum ada produk untuk kategori ini.</p>
                     </div>
                 @endforelse
             </div>
         </div>
     </div>
+    <section id="testimoni" class="bg-pink-50/30 py-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h3 class="text-4xl font-playfair font-bold text-gray-900 mb-4 italic">Sentuhan Cantik Mereka</h3>
+                <p class="text-gray-500 font-medium italic">Cerita jujur dari para pecinta GlowUp.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                @forelse($reviews as $review)
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-pink-50 relative">
+                        <div class="text-pink-400 text-4xl absolute top-6 right-8 opacity-20 font-serif">“</div>
+
+                        {{-- Menampilkan Bintang Sesuai Rating --}}
+                        <div class="flex items-center gap-1 text-yellow-400 mb-4 text-xs">
+                            @for ($i = 0; $i < $review->rating; $i++)
+                                <span>⭐</span>
+                            @endfor
+                        </div>
+
+                        <p class="text-gray-600 italic mb-6 text-sm leading-relaxed">
+                            "{{ $review->comment }}"
+                        </p>
+
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="h-10 w-10 bg-pink-600 rounded-full flex items-center justify-center font-bold text-white text-xs shadow-lg">
+                                {{ strtoupper(substr($review->user->name, 0, 2)) }}
+                            </div>
+                            <div>
+                                <h5 class="text-sm font-bold text-gray-900">{{ $review->user->name }}</h5>
+                                <p class="text-[10px] text-pink-500 font-black uppercase tracking-widest">Verified
+                                    Buyer</p>
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="col-span-full text-center py-10">
+                        <p class="text-gray-400 italic">Belum ada ulasan terbaik untuk ditampilkan.</p>
+                    </div>
+                @endforelse
+            </div>
+        </div>
+    </section>
+   
 
     <footer class="bg-white border-t border-pink-100 pt-20 pb-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -193,9 +267,16 @@
                 <div>
                     <h4 class="text-gray-900 font-bold uppercase tracking-widest text-sm mb-6">Navigasi</h4>
                     <ul class="space-y-4 text-gray-500 font-medium text-sm">
+                        {{-- Mengarah ke bagian paling atas --}}
                         <li><a href="#" class="hover:text-pink-600 transition">Beranda</a></li>
+
+                        {{-- Mengarah ke ID Katalog --}}
                         <li><a href="#katalog" class="hover:text-pink-600 transition">Koleksi Produk</a></li>
-                        <li><a href="#" class="hover:text-pink-600 transition">Promo Spesial</a></li>
+
+                        {{-- Mengarah ke ID Testimoni --}}
+                        <li><a href="#testimoni" class="hover:text-pink-600 transition">Ulasan Cantik</a></li>
+
+                        {{-- Bisa diarahkan ke section Hero/About --}}
                         <li><a href="#" class="hover:text-pink-600 transition">Tentang Kami</a></li>
                     </ul>
                 </div>
@@ -203,10 +284,13 @@
                 <div>
                     <h4 class="text-gray-900 font-bold uppercase tracking-widest text-sm mb-6">Bantuan</h4>
                     <ul class="space-y-4 text-gray-500 font-medium text-sm">
-                        <li><a href="#" class="hover:text-pink-600 transition">Cara Pemesanan</a></li>
+                        {{-- Link ke halaman pendaftaran/login untuk simulasi pemesanan --}}
+                        <li><a href="{{ route('login') }}" class="hover:text-pink-600 transition">Cara Pemesanan</a>
+                        </li>
                         <li><a href="#" class="hover:text-pink-600 transition">Syarat & Ketentuan</a></li>
                         <li><a href="#" class="hover:text-pink-600 transition">Kebijakan Privasi</a></li>
-                        <li><a href="#" class="hover:text-pink-600 transition">Hubungi Kami</a></li>
+                        <li><a href="https://wa.me/yourphonenumber" class="hover:text-pink-600 transition">Hubungi
+                                Kami</a></li>
                     </ul>
                 </div>
 
@@ -236,7 +320,45 @@
             </div>
         </div>
     </footer>
-
 </body>
 
 </html>
+
+<div id="modal-policy"
+    class="fixed inset-0 bg-black/50 z-[100] hidden items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-[2rem] max-w-2xl w-full max-h-[80vh] overflow-y-auto p-10 relative">
+        <button onclick="closePolicy()" class="absolute top-6 right-6 text-gray-400 hover:text-pink-600 font-bold">✕
+            Close</button>
+        <h3 id="policy-title" class="text-2xl font-playfair font-bold text-pink-600 mb-6 uppercase tracking-widest">
+        </h3>
+        <div id="policy-content" class="text-sm text-gray-500 leading-relaxed space-y-4">
+        </div>
+    </div>
+</div>
+
+<script>
+    function openPolicy(type) {
+        const modal = document.getElementById('modal-policy');
+        const title = document.getElementById('policy-title');
+        const content = document.getElementById('policy-content');
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        if (type === 'syarat') {
+            title.innerText = 'Syarat & Ketentuan';
+            content.innerHTML =
+                '<p>1. Semua produk GlowUp dijamin keasliannya.</p><p>2. Pengiriman dilakukan maksimal H+1 setelah pembayaran.</p><p>3. Barang yang sudah dibuka segelnya tidak dapat dikembalikan kecuali cacat produksi.</p>';
+        } else {
+            title.innerText = 'Kebijakan Privasi';
+            content.innerHTML =
+                '<p>Kami menjaga data pribadi Anda dengan sangat aman. Data Anda hanya digunakan untuk keperluan pengiriman pesanan dan informasi promo eksklusif GlowUp.</p>';
+        }
+    }
+
+    function closePolicy() {
+        const modal = document.getElementById('modal-policy');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+</script>

@@ -1,90 +1,111 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-playfair font-semibold text-2xl text-pink-600 leading-tight tracking-tight">
-            {{ __('Riwayat Belanja Cantikmu ✨') }}
+        <h2 class="font-playfair font-semibold text-2xl text-pink-600 leading-tight">
+            {{ __('Riwayat Pesanan Saya ✨') }}
         </h2>
     </x-slot>
 
-    <div class="py-12 bg-pink-50/50 min-h-screen">
-        <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-12 bg-pink-50 min-h-screen">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-white flex items-center justify-between">
-                    <div>
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Transaksi</p>
-                        <h3 class="text-3xl font-black text-gray-800">{{ $orders->count() }}</h3>
-                    </div>
-                    <div class="text-4xl">🛍️</div>
-                </div>
-                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-white flex items-center justify-between">
-                    <div>
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Lunas</p>
-                        <h3 class="text-3xl font-black text-green-500">{{ $orders->where('status', 'success')->count() }}</h3>
-                    </div>
-                    <div class="text-4xl">✅</div>
-                </div>
-                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-white flex items-center justify-between text-center">
-                    <a href="{{ route('customer.katalog') }}" class="w-full text-xs font-black text-pink-600 hover:scale-105 transition-transform uppercase tracking-tighter">
-                        Tambah Koleksi Skincare →
-                    </a>
-                </div>
+            {{-- MENU TAB SEPERTI SHOPEE --}}
+            <div class="flex border-b border-pink-100 mb-8 overflow-x-auto bg-white rounded-t-3xl shadow-sm">
+                <button onclick="filterOrder('semua')" class="tab-btn px-6 py-4 text-sm font-bold text-pink-600 border-b-2 border-pink-600 whitespace-nowrap">Semua</button>
+                <button onclick="filterOrder('belum bayar')" class="tab-btn px-6 py-4 text-sm font-bold text-gray-400 hover:text-pink-600 whitespace-nowrap">Belum Bayar</button>
+                <button onclick="filterOrder('dikemas')" class="tab-btn px-6 py-4 text-sm font-bold text-gray-400 hover:text-pink-600 whitespace-nowrap">Dikemas</button>
+                <button onclick="filterOrder('dikirim')" class="tab-btn px-6 py-4 text-sm font-bold text-gray-400 hover:text-pink-600 whitespace-nowrap">Dikirim</button>
+                <button onclick="filterOrder('selesai')" class="tab-btn px-6 py-4 text-sm font-bold text-gray-400 hover:text-pink-600 whitespace-nowrap">Selesai</button>
             </div>
 
-            <div class="bg-white overflow-hidden shadow-2xl shadow-pink-100 sm:rounded-[3rem] border border-white">
-                <div class="p-10">
-                    <h3 class="text-xl font-bold text-gray-800 mb-8 border-b border-pink-50 pb-4">Daftar Pesanan</h3>
-
-                    @if($orders->count() > 0)
-                        <div class="space-y-6">
-                            @foreach($orders as $order)
-                                <div class="group relative bg-pink-50/30 rounded-[2rem] p-6 border border-transparent hover:border-pink-200 hover:bg-white transition-all duration-500 shadow-sm hover:shadow-xl">
-                                    <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                                        <div class="flex items-center space-x-6">
-                                            <div class="h-16 w-16 bg-white rounded-2xl flex items-center justify-center text-2xl shadow-inner border border-pink-50">
-                                                📦
-                                            </div>
-                                            <div>
-                                                <p class="text-xs font-black text-pink-600 uppercase tracking-widest mb-1">#INV-{{ $order->id }}</p>
-                                                <p class="text-lg font-bold text-gray-800 tracking-tighter">Rp {{ number_format($order->total_price, 0, ',', '.') }}</p>
-                                                <p class="text-[10px] text-gray-400 font-bold uppercase">{{ $order->created_at->format('d M Y, H:i') }}</p>
-                                            </div>
-                                        </div>
-
-                                        <div class="flex flex-col items-end gap-3">
-                                            <span class="px-5 py-2 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-sm
-                                                {{ $order->status == 'success' ? 'bg-green-500 text-white' : '' }}
-                                                {{ $order->status == 'pending' ? 'bg-yellow-400 text-white' : '' }}
-                                                {{ $order->status == 'dikirim' ? 'bg-blue-500 text-white' : '' }}
-                                                {{ $order->status == 'selesai' ? 'bg-purple-500 text-white' : '' }}">
-                                                {{ $order->status }}
-                                            </span>
-
-                                            <div class="flex space-x-2">
-                                                <a href="{{ route('orders.show', $order->id) }}" class="text-[10px] font-black text-pink-600 bg-white border border-pink-100 px-6 py-2 rounded-xl hover:bg-pink-600 hover:text-white transition-all shadow-sm">
-                                                    DETAIL
-                                                </a>
-                                                @if($order->status == 'pending')
-                                                    <button onclick="window.snap.pay('{{ $order->snap_token }}')" class="text-[10px] font-black text-white bg-gray-900 px-6 py-2 rounded-xl hover:bg-pink-600 transition-all shadow-lg">
-                                                        BAYAR
-                                                    </button>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
+            <div class="space-y-6">
+                @forelse($orders as $order)
+                    <div class="order-card bg-white rounded-3xl shadow-sm border border-white p-6 transition-all hover:shadow-md" data-status="{{ $order->status }}">
+                        <div class="flex justify-between items-center border-b border-gray-50 pb-4 mb-4">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">ID Pesanan: #{{ $order->id }}</span>
+                            <span class="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest
+                                {{ $order->status == 'belum bayar' ? 'bg-yellow-100 text-yellow-600' : '' }}
+                                {{ $order->status == 'dikemas' ? 'bg-orange-100 text-orange-600' : '' }}
+                                {{ $order->status == 'dikirim' ? 'bg-blue-100 text-blue-600' : '' }}
+                                {{ $order->status == 'selesai' ? 'bg-green-100 text-green-600' : '' }}">
+                                {{ $order->status }}
+                            </span>
                         </div>
-                    @else
-                        <div class="text-center py-20">
-                            <div class="text-6xl mb-6 opacity-20">🛍️</div>
-                            <p class="text-gray-400 font-bold italic">Belum ada jejak pesanan cantikmu di sini.</p>
-                            <a href="{{ route('customer.katalog') }}" class="inline-block mt-8 px-10 py-4 bg-pink-600 text-white font-black rounded-full shadow-xl shadow-pink-100 hover:scale-105 transition-all uppercase tracking-widest text-[10px]">
-                                Jelajahi Katalog ✨
-                            </a>
+
+                        <div class="flex gap-6">
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-800">Total Pembayaran:
+                                    <span class="text-pink-600 text-lg">Rp {{ number_format($order->total_price, 0, ',', '.') }}</span>
+                                </h4>
+                                <p class="text-xs text-gray-400 mt-1 italic">📍 {{ $order->address }}</p>
+                            </div>
+
+                            <div class="flex items-center gap-3">
+                                {{-- 1. JIKA DIKIRIM: TOMBOL PESANAN SELESAI --}}
+                                @if($order->status == 'dikirim')
+                                    <form action="{{ route('orders.selesai', $order->id) }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-blue-700 shadow-lg transition">
+                                            ✅ Pesanan Diterima
+                                        </button>
+                                    </form>
+
+                                {{-- 2. JIKA SELESAI: TOMBOL BELI LAGI & ULAS --}}
+                                @elseif($order->status == 'selesai')
+                                    <a href="{{ route('customer.katalog') }}" class="bg-gray-100 text-gray-600 px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-pink-100 hover:text-pink-600 transition">
+                                        🛍️ Beli Lagi
+                                    </a>
+                                    {{-- Tombol Ulas (Asumsi rute sudah ada) --}}
+                                    <a href="{{ route('customer.reviews.create', ['product_id' => $order->items->first()->product_id ?? 0]) }}"
+                                       class="bg-pink-600 text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-pink-700 shadow-lg transition">
+                                        ⭐ Beri Ulasan
+                                    </a>
+
+                                {{-- 3. JIKA BELUM BAYAR: TOMBOL DETAIL / BAYAR --}}
+                                @elseif($order->status == 'belum bayar')
+                                    <a href="{{ route('orders.show', $order->id) }}" class="bg-yellow-500 text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-yellow-600 transition">
+                                        💳 Bayar Sekarang
+                                    </a>
+                                @endif
+
+                                <a href="{{ route('orders.show', $order->id) }}" class="p-2.5 bg-gray-50 text-gray-400 rounded-xl hover:bg-pink-50 hover:text-pink-600 transition">
+                                    👁️
+                                </a>
+                            </div>
                         </div>
-                    @endif
-                </div>
+                    </div>
+                @empty
+                    <div class="text-center py-20 bg-white rounded-[3rem]">
+                        <p class="text-gray-400 italic">Belum ada pesanan di kategori ini.</p>
+                    </div>
+                @endforelse
             </div>
         </div>
     </div>
+
+    {{-- SCRIPT FILTER TAB --}}
+    <script>
+        function filterOrder(status) {
+            const cards = document.querySelectorAll('.order-card');
+            const btns = document.querySelectorAll('.tab-btn');
+
+            // Ubah gaya tombol
+            btns.forEach(btn => {
+                btn.classList.remove('text-pink-600', 'border-b-2', 'border-pink-600');
+                btn.classList.add('text-gray-400');
+                if(btn.innerText.toLowerCase() === status) {
+                    btn.classList.add('text-pink-600', 'border-b-2', 'border-pink-600');
+                    btn.classList.remove('text-gray-400');
+                }
+            });
+
+            // Filter Kartu
+            cards.forEach(card => {
+                if (status === 'semua' || card.getAttribute('data-status') === status) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+    </script>
 </x-app-layout>

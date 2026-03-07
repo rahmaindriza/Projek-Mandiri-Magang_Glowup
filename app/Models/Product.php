@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Review;
 
 class Product extends Model
 {
@@ -25,5 +26,17 @@ class Product extends Model
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
+  
+    // Fungsi tambahan untuk menghitung rata-rata rating
+    public function averageRating()
+    {
+        return $this->reviews()->avg('rating') ?? 0;
     }
 }
