@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 class OrderController extends Controller
 {
     /**
-     * Menampilkan daftar riwayat pesanan untuk Customer
+     * Menampilkan daftar riwayat pesanan untuk Customer (Dashboard)
      */
     public function index()
     {
@@ -21,6 +21,9 @@ class OrderController extends Controller
         return view('dashboard', compact('orders'));
     }
 
+    /**
+     * Menampilkan daftar riwayat pesanan (Halaman Khusus Riwayat)
+     */
     public function customerIndex()
     {
         $orders = Order::with('orderItems.product')
@@ -32,13 +35,12 @@ class OrderController extends Controller
     }
 
     /**
-     * FUNGSI BARU: Customer klik "Pesanan Diterima" ✨
+     * Customer klik "Pesanan Diterima" ✨
      */
     public function markAsSelesai($id)
     {
         $order = Order::where('user_id', Auth::id())->findOrFail($id);
 
-        // Hanya bisa diselesaikan jika statusnya 'dikirim'
         if ($order->status == 'dikirim') {
             $order->update(['status' => 'selesai']);
             return redirect()->back()->with('success', 'Pesanan selesai! Silakan berikan ulasan terbaikmu. ✨');
@@ -48,17 +50,15 @@ class OrderController extends Controller
     }
 
     /**
-     * FUNGSI BARU: Customer Membatalkan Pesanan ❌
+     * Customer Membatalkan Pesanan ❌
      */
     public function cancelOrder($id)
     {
         $order = Order::where('user_id', Auth::id())->findOrFail($id);
 
-        // Hanya bisa dibatalkan jika belum bayar
-        if ($order->status == 'belum bayar') {
+        if ($order->status == 'dikemas') {
             $order->update(['status' => 'dibatalkan']);
 
-            // Kembalikan stok produk
             foreach ($order->orderItems as $item) {
                 $item->product->increment('stock', $item->quantity);
             }
@@ -69,18 +69,27 @@ class OrderController extends Controller
         return redirect()->back()->with('error', 'Pesanan tidak bisa dibatalkan.');
     }
 
+    /**
+     * Tampilan Riwayat Pesanan Admin
+     */
     public function adminIndex()
     {
         $orders = Order::with('user')->orderBy('created_at', 'desc')->get();
         return view('admin.orders.index', compact('orders'));
     }
 
+    /**
+     * Detail Pesanan sisi Customer (Menampilkan Alamat Lengkap & Resi)
+     */
     public function show($id)
     {
         $order = Order::with('orderItems.product')->where('user_id', Auth::id())->findOrFail($id);
         return view('customer.orders.show', compact('order'));
     }
 
+    /**
+     * Detail Pesanan sisi Admin
+     */
     public function adminShow($id)
     {
         $order = Order::with(['user', 'orderItems.product'])->findOrFail($id);
@@ -88,62 +97,26 @@ class OrderController extends Controller
     }
 
     /**
-     * Callback Midtrans: Update status ke 'dikemas' ✨
-     */
-   public function midtransCallback(Request $request)
-{
-    $serverKey = config('midtrans.server_key');
-    $hashed = hash("sha512", $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
-
-    if ($hashed == $request->signature_key) {
-        $orderId = $request->order_id;
-
-        // Ambil ID murni jika pakai format INV-10
-        if (str_contains($orderId, '-')) {
-            $orderIdParts = explode('-', $orderId);
-            $orderId = end($orderIdParts);
-        }
-
-        $order = Order::find($orderId);
-
-        if ($order) {
-            // 1. JIKA BERHASIL BAYAR ✨
-            if ($request->transaction_status == 'capture' || $request->transaction_status == 'settlement') {
-                // Status langsung pindah ke 'dikemas'
-                $order->update(['status' => 'dikemas']);
-
-                return response()->json(['message' => 'Status berubah: Dikemas']);
-            }
-
-            // 2. JIKA GAGAL/CANCEL/EXPIRE
-            elseif (in_array($request->transaction_status, ['expire', 'cancel', 'deny'])) {
-                $order->update(['status' => 'dibatalkan']);
-
-                // Kembalikan stok (Gunakan relasi yang benar, asumsikan 'items' atau 'orderItems')
-                foreach ($order->items as $item) {
-                    $item->product->increment('stock', $item->quantity);
-                }
-
-                return response()->json(['message' => 'Status berubah: Dibatalkan']);
-            }
-        }
-    }
-    return response()->json(['message' => 'Callback diproses'], 200);
-}
-
-    /**
-     * Update Status oleh Admin
+     * Update Status & Input Resi oleh Admin 🚚
      */
     public function updateStatus(Request $request, $id)
     {
-        $order = Order::with('orderItems.product')->findOrFail($id);
+        $order = Order::findOrFail($id);
         $oldStatus = $order->status;
 
         $request->validate([
-            'status' => 'required|in:belum bayar,dikemas,dikirim,selesai,dibatalkan'
+            'status' => 'required|in:belum bayar,dikemas,dikirim,selesai,dibatalkan',
+            'tracking_number' => 'nullable|string' // Validasi untuk nomor resi
         ]);
 
-        $order->update(['status' => $request->status]);
+        $updateData = ['status' => $request->status];
+
+        // Jika status diubah ke dikirim, simpan nomor resi
+        if ($request->status == 'dikirim' && $request->tracking_number) {
+            $updateData['tracking_number'] = $request->tracking_number;
+        }
+
+        $order->update($updateData);
 
         // Pengembalian stok jika dibatalkan
         if ($request->status == 'dibatalkan' && $oldStatus != 'dibatalkan') {
@@ -152,9 +125,38 @@ class OrderController extends Controller
             }
         }
 
-        return redirect()->back()->with('success', 'Status berhasil diperbarui!');
+        return redirect()->back()->with('success', 'Status dan informasi pengiriman berhasil diperbarui!');
     }
 
+    /**
+     * Callback Midtrans ✨
+     */
+   public function midtransCallback(Request $request)
+{
+    $serverKey = config('midtrans.server_key');
+    $hashed = hash("sha512", $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
+
+    if ($hashed == $request->signature_key) {
+        $order = Order::find($request->order_id);
+        if ($order) {
+            $status = $request->transaction_status;
+
+            // Jika pembayaran berhasil (Settlement / Capture)
+            if ($status == 'capture' || $status == 'settlement') {
+                $order->update(['status' => 'dikemas']);
+            }
+            // Jika expired atau dibatalkan, tetap 'belum bayar' atau 'dibatalkan'
+            elseif (in_array($status, ['expire', 'cancel', 'deny'])) {
+                $order->update(['status' => 'belum bayar']);
+            }
+        }
+    }
+    return response()->json(['status' => 'ok']);
+}
+
+    /**
+     * Laporan Keuangan
+     */
     public function laporan()
     {
         $orders = Order::where('status', 'selesai')->with('user')->latest()->get();
@@ -162,6 +164,9 @@ class OrderController extends Controller
         return view('admin.laporan.index', compact('orders', 'totalPendapatan'));
     }
 
+    /**
+     * Grafik Dashboard Admin
+     */
     public function adminDashboard()
     {
         $salesData = Order::where('status', 'selesai')
@@ -180,5 +185,23 @@ class OrderController extends Controller
 
         $orders = Order::with('user')->latest()->take(5)->get();
         return view('admin.dashboard', compact('months', 'totals', 'orders'));
+    }
+
+
+
+    // app/Http/Controllers/OrderController.php
+
+    public function updateStatusManual($id)
+    {
+        // Cari pesanan berdasarkan ID
+        $order = \App\Models\Order::find($id);
+
+        // Cek apakah pesanan ada dan statusnya masih 'belum bayar'
+        if ($order && $order->status == 'belum bayar') {
+            $order->update(['status' => 'dikemas']); // Ubah status ke dikemas ✨
+            return response()->json(['success' => true]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Gagal update status'], 404);
     }
 }

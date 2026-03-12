@@ -12,30 +12,34 @@ class Order extends Model
     protected $fillable = [
         'user_id',
         'phone',
+        'province',
+        'city',
+        'district',
+        'village',
+        'postal_code',
         'address',
         'total_price',
         'status',
-        'snap_token',
+        'payment_method',
+        'tracking_number',
+        'snap_token'
     ];
 
 
-   // app/Models/Order.php
 
-public function user()
-{
-    return $this->belongsTo(User::class);
-}
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
-// Tambahkan fungsi terpisah untuk items
-public function items()
-{
-    return $this->hasMany(OrderItem::class);
-}
+    // Tambahkan fungsi terpisah untuk items
+    public function items()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
 
-public function orderItems()
+    public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
     }
 }
-
-
