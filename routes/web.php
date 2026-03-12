@@ -14,16 +14,6 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 
 
-
-
-
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-*/
-
-// --- HALAMAN PUBLIK ---
 Route::get('/', function () {
     $products = Product::with('category')->latest()->get();
     return view('welcome', compact('products'));
@@ -97,14 +87,16 @@ Route::middleware('auth')->group(function () {
     // Checkout & Midtrans (Kode Asli Kamu)
     Route::get('/checkout', [CartController::class, 'checkout'])->name('checkout.index');
     Route::post('/checkout/proses', [CartController::class, 'processCheckout'])->name('checkout.process');
+    Route::get('/checkout/direct/{product_id}', [CartController::class, 'directCheckout'])->name('checkout.direct');
 
     // Riwayat Pesanan Customer (DIPERBAIKI DISINI ✨)
-    Route::get('/riwayat-pesanan', [OrderController::class, 'customerIndex'])->name('orders.index');
-    Route::get('/riwayat-pesanan/{id}', [OrderController::class, 'show'])->name('orders.show');
+    Route::get('/riwayat-pesanan', [OrderController::class, 'customerIndex'])->name('customer.orders.index');
+    Route::get('/riwayat-pesanan/{id}', [OrderController::class, 'show'])->name('customer.orders.show');
+    Route::post('/orders/{id}/update-status-manual', [OrderController::class, 'updateStatusManual'])->name('orders.updateStatusManual');
 
     // TAMBAHKAN 2 BARIS INI agar tombol BATAL dan SELESAI tidak error 404
-    Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder'])->name('orders.cancel');
-    Route::post('/orders/{id}/selesai', [OrderController::class, 'markAsSelesai'])->name('orders.selesai');
+    Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder'])->name('customer.orders.cancel');
+    Route::post('/orders/{id}/selesai', [OrderController::class, 'markAsSelesai'])->name('customer.orders.selesai');
 });
 // --- CALLBACK MIDTRANS (Luar Middleware Auth agar Midtrans bisa akses) ---
 Route::post('/midtrans/callback', [OrderController::class, 'midtransCallback']);
@@ -113,6 +105,7 @@ Route::post('/midtrans/callback', [OrderController::class, 'midtransCallback']);
 Route::get('/customer/katalog', [App\Http\Controllers\ProductController::class, 'katalog'])
     ->name('customer.katalog')
     ->middleware(['auth']);
+Route::resource('customer/orders', OrderController::class);
 
 
 //laporan keuangan admin
